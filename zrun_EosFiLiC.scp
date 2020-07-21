@@ -1,0 +1,30 @@
+#!/bin/bash
+date
+rm -f atom-positions.dat input-fortran field_line.*
+
+grep -v "_" $1 | grep ".\.." | awk '{print $3, $4, $5, $6}' > atom-positions.dat 
+
+grep "_cell_length_a" $1 | awk '{print $2}' > input-fortran
+grep "_cell_length_b" $1 | awk '{print $2}' >> input-fortran
+grep "_cell_length_c" $1 | awk '{print $2}' >> input-fortran
+
+grep "_cell_angle_alpha" $1 | awk '{print $2}' >> input-fortran
+grep "_cell_angle_beta" $1 | awk '{print $2}' >> input-fortran
+grep "_cell_angle_gamma" $1 | awk '{print $2}' >> input-fortran
+
+grep "Coordinates" EosFiLiC.input | grep -v "#" |awk '{print $2}' >> input-fortran
+
+grep "Pos_x" EosFiLiC.input |awk '{print $2}' >> input-fortran
+grep "Pos_y" EosFiLiC.input |awk '{print $2}' >> input-fortran
+grep "Pos_z" EosFiLiC.input |awk '{print $2}' >> input-fortran
+wc -l atom-positions.dat | awk '{print $1}' >> input-fortran
+grep "dr" EosFiLiC.input |awk '{print $2}' >> input-fortran
+grep "n_Points" EosFiLiC.input |awk '{print $2}' >> input-fortran
+
+gfortran -g -fcheck=all -Wall EosFiLiC.f90 -o a.exe
+./a.exe < input-fortran
+
+
+rm input-fortran a.exe atom-positions.dat
+
+date

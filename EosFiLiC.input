@@ -1,0 +1,11 @@
+# DON'T MODIFY THE STRUCTURE OF THIS FILE
+#type of coordinates (Cartesian or Crystallographic)
+Coordinates	Crystallographic
+# Point of Field line(x,y,z)
+Pos_x	0.1 
+Pos_y	0.1
+Pos_z	0.1
+# Step between points
+dr	0.02
+# Number of Points
+n_Points	1000
