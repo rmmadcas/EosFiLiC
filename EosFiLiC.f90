@@ -18,7 +18,7 @@ PROGRAM FieldLines
     INTEGER:: i, j, k, l, n_atoms, n_points, flag, id
     REAL (KIND=r), ALLOCATABLE:: u_atom(:), v_atom(:), w_atom(:), q_stru(:)
     REAL (KIND=r), ALLOCATABLE:: x_atom(:), y_atom(:), z_atom(:), q_atom(:)
-    REAL (KIND=r)::  E_x, E_y, E_z
+    REAL (KIND=r):: E_x, E_y, E_z
     REAL (KIND=r):: E_total(3), E_aux(3), pos(3), dir(3), dr, distance
     REAL (KIND=r):: aux_x, aux_y, aux_z       
     
@@ -69,17 +69,16 @@ PROGRAM FieldLines
             pos(1)=cell_a*(cx+2)+cell_b*cos_gamma*(cy+2)+cell_c*cos_beta*(cz+2)                 !lo convierto a cartesianas en la 3 3 3
             pos(2)=cell_b*sin_gamma*(cy+2)+cell_c*((cos_alpha-cos_beta*cos_gamma)/(sin_gamma))*(cz+2)
             pos(3)=SIGMA/(cell_a*cell_b*sin_gamma)*(cz+2)
-
     END IF
 
     aux_x=pos(1)       ! en coordenadas cartesianas en la 3 3 3
     aux_y=pos(2)
     aux_z=pos(3)
     
-    tol_E=0.05
+    tol_E=0.1 
     ALLOCATE (u_atom(1:n_atoms), v_atom(1:n_atoms), w_atom(1:n_atoms), q_stru(1:n_atoms))       !cif
     ALLOCATE (x_atom(1:125*n_atoms), y_atom(1:125*n_atoms), z_atom(1:125*n_atoms), q_atom(1:125*n_atoms))       !replica 5x5x5
-
+    
     OPEN(2,file="field_line.pdb",STATUS='NEW', ACTION='WRITE')
 
 
@@ -108,6 +107,7 @@ PROGRAM FieldLines
             DO i=1, 125*n_atoms
         
                 distance=(sqrt((pos(1)-x_atom(i))**2+(pos(2)-y_atom(i))**2+(pos(3)-z_atom(i))**2))
+!                print*, distance
                 IF (distance.le.Cordinated_Radius) THEN       
                         E_x=q_atom(i)/(distance**3)*(pos(1)-x_atom(i))
                         E_y=q_atom(i)/(distance**3)*(pos(2)-y_atom(i))
@@ -116,11 +116,12 @@ PROGRAM FieldLines
                         E_total(1)=E_total(1)+E_x
                         E_total(2)=E_total(2)+E_y    
                         E_total(3)=E_total(3)+E_z
-              
-               END IF
+!                        print*, E_x, E_y, E_z, q_atom(i), i, Cordinated_Radius
+                END IF
             END DO
             m_E_total=SQRT((E_total(1))**2+(E_total(2))**2+(E_total(3))**2)
 
+!            print*,m_E_total,  SQRT((E_total(1)-E_aux(1))**2+(E_total(2)-E_aux(2))**2+(E_total(3)-E_aux(3))**2)/m_E_total
             IF (SQRT((E_total(1)-E_aux(1))**2+(E_total(2)-E_aux(2))**2+(E_total(3)-E_aux(3))**2)/m_E_total.lt.tol_E) THEN
                     
                     dir(1)=E_total(1)/sqrt((E_total(1)**2+E_total(2)**2+E_total(3)**2))
@@ -198,30 +199,31 @@ PROGRAM FieldLines
         
         OPEN(1,FILE="atom-positions.dat",STATUS='OLD', ACTION='READ')
         DO i=1, n_atoms    !recorro los atomos
-            READ(1,*) u_atom(i), v_atom(i), w_atom(i), q_atom(i)
+            READ(1,*) u_atom(i), v_atom(i), w_atom(i), q_stru(i)
         END DO
         CLOSE (UNIT=1) 
     END SUBROUTINE readatoms
 
     SUBROUTINE replicaCelda
     IMPLICIT NONE
-    OPEN(25,file="UnitCell.pdb",STATUS='NEW', ACTION='WRITE')
-
         INTEGER:: ll
+        OPEN(25,file="UnitCell.pdb",STATUS='NEW', ACTION='WRITE')
         ll=0
-        DO i=1, 5 
-                DO j=1, 5 
-                        DO k=1, 5 
+        DO i=0, 4 
+                DO j=0, 4 
+                        DO k=0, 4 
                                 DO l=1, n_atoms
-x_atom(ll+l)=cell_a*(u_atom(l)+i)+cell_b*cos_gamma*(v_atom(l)+j)+cell_c*cos_beta*(w_atom(l)+k)
-y_atom(ll+l)=cell_b*sin_gamma*(j+v_atom(l))+cell_c*((cos_alpha-cos_beta*cos_gamma)/(sin_gamma))*(w_atom(l)+k)
-z_atom(ll+l)=SIGMA/(cell_a*cell_b*sin_gamma)*(k+w_atom(l))
-q_atom(ll+1)=q_stru(l)  
-IF ll=0
+x_atom(ll*n_atoms+l)=cell_a*(u_atom(l)+i)+cell_b*cos_gamma*(v_atom(l)+j)+cell_c*cos_beta*(w_atom(l)+k)
+y_atom(ll*n_atoms+l)=cell_b*sin_gamma*(j+v_atom(l))+cell_c*((cos_alpha-cos_beta*cos_gamma)/(sin_gamma))*(w_atom(l)+k)
+z_atom(ll*n_atoms+l)=SIGMA/(cell_a*cell_b*sin_gamma)*(k+w_atom(l))
+q_atom(ll*n_atoms+l)=q_stru(l)
+IF (ll.eq.0) THEN
 WRITE(25,'(A6,I5,A18,F9.3,X,F7.3,F7.2,A21)')atom,id,lines,x_atom(l),y_atom(l),z_atom(l),endlines               !la replica en cartesianas
 END IF
+!print*, x_atom(ll+l),y_atom(ll+l),z_atom(ll+l),q_atom(ll+l), ll*n_atoms+l
                                 END DO  !l
                         ll=ll+1
+!                        print*, ll, ll*n_atoms
                         END DO  !k
                 END DO  !j
         END DO  !i
